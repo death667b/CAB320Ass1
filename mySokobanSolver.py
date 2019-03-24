@@ -70,7 +70,7 @@ def taboo_cells(warehouse):
     def inWarehouse(houseLines, inside, x, y):
         # protect agains negitive array elements
         lastX = 0 if x <= 1 else x - 1
-        lineLength = len(houseLines)-1
+        lineLength = len(houseLines[0])
         
         if houseLines[y][lastX] == '#' and \
             (houseLines[y][x] == ' ' or houseLines[y][x] == '.'):
