@@ -65,8 +65,56 @@ def taboo_cells(warehouse):
        The returned string should NOT have marks for the worker, the targets,
        and the boxes.  
     '''
-    ##         "INSERT YOUR CODE HERE"    
-    return 'fffaaarrrkkk'
+
+    # check to see if inside of warehouse walls
+    def inWarehouse(houseLines, inside, x, y):
+        # protect agains negitive array elements
+        lastX = 0 if x <= 1 else x - 1
+        lineLength = len(houseLines)-1
+        
+        if houseLines[y][lastX] == '#' and \
+            (houseLines[y][x] == ' ' or houseLines[y][x] == '.'):
+            for idx in range(x, lineLength):
+                if houseLines[y][idx] == '#':
+                    inside = 1
+        elif houseLines[y][x] == '#':
+            inside = 0
+        
+        return inside
+    
+    
+    # Prepair houseLines leaving the targets in place for now
+    houseLines = str(warehouse) \
+        .replace('@', ' ') \
+        .replace('$', ' ') \
+        .replace('*', '.') \
+        .split('\n')
+    
+    
+    for y in range(1, len(houseLines)-1):
+        inside= 0
+        for x in range(len(houseLines[y])):
+            inside = inWarehouse(houseLines, inside, x, y)
+            
+            if inside == 1 and houseLines[y][x] != '.':
+                # Check top left corner
+                if houseLines[y-1][x] == '#' and houseLines[y][x-1] == '#':
+                    houseLines[y] = houseLines[y][:x] + 'X' + houseLines[y][x+1:]
+                # Check top right corner
+                if houseLines[y-1][x] == '#' and houseLines[y][x+1] == '#':
+                    houseLines[y] = houseLines[y][:x] + 'X' + houseLines[y][x+1:]
+                # Check bottom left corner
+                if houseLines[y+1][x] == '#' and houseLines[y][x-1] == '#':
+                    houseLines[y] = houseLines[y][:x] + 'X' + houseLines[y][x+1:]
+                # Check bottom right corner
+                if houseLines[y+1][x] == '#' and houseLines[y][x+1] == '#':
+                    houseLines[y] = houseLines[y][:x] + 'X' + houseLines[y][x+1:]
+    
+    returnStr = '\n'.join(houseLines).replace('.', ' ')
+    
+    print (returnStr)
+
+    return returnStr
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
