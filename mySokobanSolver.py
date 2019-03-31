@@ -66,7 +66,7 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
 
-    # check to see if inside of warehouse walls
+    
     def inWarehouse(houseLines, inside, x, y):
         # protect agains negitive array elements
         lastX = 0 if x <= 1 else x - 1
@@ -82,6 +82,25 @@ def taboo_cells(warehouse):
         
         return inside
     
+    def popLeft(arr):
+        return (arr[:1][0], arr[1:])
+    
+    def drawHorizontalLine(houseLines, y):
+        newLine = '-1'
+        indices = [i for i, x in enumerate(houseLines[y]) if x == "X"]
+        if len(indices) > 1: 
+            popped, indices = popLeft(indices)
+            counter = 0
+            for x in range(popped+1, indices[0]):
+                if houseLines[y][x] == ' ' and (houseLines[y-1][x] == '#' or houseLines[y+1][x] == '#'):
+                    counter += 1
+                else:
+                    counter = 0
+                    break
+                
+            if counter > 0:
+                newLine = houseLines[y][:x]+('X'*counter)+houseLines[y][indices[0]:]
+        return newLine
     
     # Prepair houseLines leaving the targets in place for now
     houseLines = str(warehouse) \
@@ -109,8 +128,14 @@ def taboo_cells(warehouse):
                 # Check bottom right corner
                 if houseLines[y+1][x] == '#' and houseLines[y][x+1] == '#':
                     houseLines[y] = houseLines[y][:x] + 'X' + houseLines[y][x+1:]
+          
+         
+        newLine = drawHorizontalLine(houseLines, y)
+        if newLine != '-1':
+            houseLines[y] = newLine
+        houseLines[y] = houseLines[y].replace('.', ' ')
     
-    returnStr = '\n'.join(houseLines).replace('.', ' ')
+    returnStr = '\n'.join(houseLines)
     
     print (returnStr)
 
