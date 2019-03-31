@@ -99,7 +99,7 @@ def taboo_cells(warehouse):
                     break
                 
             if counter > 0:
-                newLine = houseLines[y][:x]+('X'*counter)+houseLines[y][indices[0]:]
+                newLine = houseLines[y][:popped+1]+('X'*counter)+houseLines[y][indices[0]:]
         return newLine
     
     # Prepair houseLines leaving the targets in place for now
@@ -109,7 +109,7 @@ def taboo_cells(warehouse):
         .replace('*', '.') \
         .split('\n')
     
-    
+    # Calculates corner cells and horizontal taboo lines
     for y in range(1, len(houseLines)-1):
         inside= 0
         for x in range(len(houseLines[y])):
@@ -133,11 +133,31 @@ def taboo_cells(warehouse):
         newLine = drawHorizontalLine(houseLines, y)
         if newLine != '-1':
             houseLines[y] = newLine
-        houseLines[y] = houseLines[y].replace('.', ' ')
+            
+    # Calculates vertical taboo lines (needs all corners computed)
+    for y in range(1, len(houseLines)-1):
+        for x in range(1, len(houseLines[y])-1):
+            if houseLines[y][x] == 'X':
+                # Start checking downward
+                counter = 0
+                for yy in range(y+1, len(houseLines)-1):
+                    if houseLines[yy][x] == ' ' and (houseLines[yy][x-1] == '#' or houseLines[yy][x+1] == '#'):
+                        counter += 1
+                    elif houseLines[yy][x] == 'X' and (houseLines[yy][x-1] == '#' or houseLines[yy][x+1] == '#'):
+                        # Line ends here
+                        break
+                    else:
+                        # Fails the rules
+                        counter = 0
+                        break
+                if counter > 0:
+                    # apply found taboo
+                    for yy in range(y+1, counter+y+2):
+                        houseLines[yy] = houseLines[yy][:x]+'X'+houseLines[yy][x+1:]
     
-    returnStr = '\n'.join(houseLines)
+    returnStr = '\n'.join(houseLines).replace('.', ' ')
     
-    print (returnStr)
+    #print ('\n'+returnStr)
 
     return returnStr
 
