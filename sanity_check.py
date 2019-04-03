@@ -63,6 +63,28 @@ def test_check_elem_action_seq():
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
+    # third test - push a box
+    answer = check_action_seq(wh, ['Right', 'Right','Down','Left'])
+    expected_answer = '####  \n# .#  \n#  ###\n#*   #\n# $@ #\n#  ###\n####  '
+    fcn = test_check_elem_action_seq    
+    print('<<  Third test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+    # fourth test - push a box into a wall
+    answer = check_action_seq(wh, ['Right', 'Down'])
+    expected_answer = 'Failure'
+    fcn = test_check_elem_action_seq    
+    print('<<  Fourth test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
 
 
 

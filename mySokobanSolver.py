@@ -236,10 +236,56 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
+    whTemp = warehouse.copy()   
     
-    ##         "INSERT YOUR CODE HERE"
+    # These are in (y, x) format
+    moveLeft = (-1, 0)
+    moveRight = (1, 0)
+    moveUp= (0, -1)
+    moveDown = (0, 1)
     
-    raise NotImplementedError()
+    def wallsAndBoxesCheck(whh, action):
+        workLocation = whh.worker
+        whWalls = whh.walls
+        whBoxes = whh.boxes
+        
+        testLocation = workLocation[0] + action[0], workLocation[1] + action[1] 
+        if testLocation not in whWalls:
+            if testLocation in whBoxes:
+                # NewLocation is a possible box location
+                # Testing to see if it will be in a wall OR another box
+                newLocation = testLocation[0] + action[0], testLocation[1] + action[1] 
+                if newLocation in whWalls or newLocation in whBoxes:
+                    return "Failure"
+                # Move the box
+                boxIdx = whBoxes.index(testLocation)
+                whBoxes[boxIdx] = newLocation
+            newWorker = testLocation
+        else:
+            return "Failure"
+            
+        return whh.copy(worker = newWorker, boxes = whBoxes)
+        
+    
+    for action in action_seq:
+        if action == 'Left':
+            whTemp = wallsAndBoxesCheck(whTemp, moveLeft)
+            if not isinstance(whTemp, search.Warehouse):
+                break
+        elif action == 'Right':
+            whTemp = wallsAndBoxesCheck(whTemp, moveRight)
+            if not isinstance(whTemp, search.Warehouse):
+                break
+        elif action == 'Up':
+            whTemp = wallsAndBoxesCheck(whTemp, moveUp)
+            if not isinstance(whTemp, search.Warehouse):
+                break
+        elif action == 'Down':
+            whTemp = wallsAndBoxesCheck(whTemp, moveDown)
+            if not isinstance(whTemp, search.Warehouse):
+                break
+    
+    return str(whTemp)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -318,7 +364,60 @@ def solve_sokoban_macro(warehouse):
     raise NotImplementedError()
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+class SokobanProblem(search.Problem):
+    def createGoal(warehouse):
+        houseLines = str(warehouse) \
+            .replace('@', ' ') \
+            .replace('$', ' ') \
+            .replace('.', '*')
+        return houseLines
+    
+    def __init__(self, initial, warehouse, goal=None):
+        self.initial = initial
+        self.warehouse = warehouse
+        # Need to reverse the row(y) and col(x) 
+        # from a (y,x) pair to (x,y) pair
+        self.goal = self.createGoal(warehouse)
+    
+    def actions(self, state):
+        """Return the actions that can be executed in the given
+        state. The result would typically be a list, but if there are
+        many actions, consider yielding them one at a time in an
+        iterator, rather than building them all at once."""
+        raise NotImplementedError
 
+    def result(self, state, action):
+        """Return the state that results from executing the given
+        action in the given state. The action must be one of
+        self.actions(state)."""
+        raise NotImplementedError
+
+    def goal_test(self, state):
+        """Return True if the state is a goal. The default method compares the
+        state to self.goal, as specified in the constructor. Override this
+        method if checking against a single self.goal is not enough."""
+        
+        # MIGHT WANT TO CONVERT STATE TO STRING ?????
+        return state == self.goal
+
+    def path_cost(self, c, state1, action, state2):
+        """Return the cost of a solution path that arrives at state2 from
+        state1 via action, assuming cost c to get up to state1. If the problem
+        is such that the path doesn't matter, this function will only look at
+        state2.  If the path does matter, it will consider c and maybe state1
+        and action. The default method costs 1 for every step in the path."""
+        # 
+        
+        return c + 1
+
+    def value(self, state):
+        """For optimization problems, each state has a value.  Hill-climbing
+        and related algorithms try to maximize this value."""
+        raise NotImplementedError
+    
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
 class Pathing(search.Problem):
     '''
     Really need to write something here
