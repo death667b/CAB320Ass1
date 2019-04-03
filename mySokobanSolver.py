@@ -320,6 +320,9 @@ def solve_sokoban_macro(warehouse):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 class Pathing(search.Problem):
+    '''
+    Really need to write something here
+    '''
     def __init__(self, initial, warehouse, goal=None):
         self.initial = initial
         self.warehouse = warehouse
@@ -334,7 +337,10 @@ class Pathing(search.Problem):
         return moveCost
     
     def result(self, state, action):
-        return state[0] + action[0], state[1] + action[1]
+        newX = state[0] + action[0]
+        newY = state[1] + action[1]
+        
+        return newX, newY 
     
     def actions(self, state):
         myTaboos = [(0, -1), (0, 1), (-1, 0), (1, 0)]
