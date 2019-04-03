@@ -277,9 +277,20 @@ def can_go_there(warehouse, dst):
       False otherwise
     '''
     
-    ##         "INSERT YOUR CODE HERE"
+    def heuristic(node):
+        # Using Manhattan Distance for heuristics
+        nodeState = node.state
+        
+        aSquared = (nodeState[0] - dst[0]) ** 2
+        bSquared = (nodeState[1] - dst[1]) ** 2
+        manhattanDistance = (aSquared + bSquared) ** 0.5
+        
+        return manhattanDistance
     
-    raise NotImplementedError()
+    worker = warehouse.worker
+    node = search.astar_graph_search(Pathing(worker, warehouse, dst), heuristic)
+           
+    return node is not None
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -308,3 +319,30 @@ def solve_sokoban_macro(warehouse):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+class Pathing(search.Problem):
+    def __init__(self, initial, warehouse, goal=None):
+        self.initial = initial
+        self.warehouse = warehouse
+        # Need to reverse the row(y) and col(x) 
+        # from a (y,x) pair to (x,y) pair
+        self.goal = (goal[1], goal[0])
+        
+    def value(self, state):
+        # All moves have a cost of 1
+        # This works with heuristics so they are admissible
+        moveCost = 1
+        return moveCost
+    
+    def result(self, state, action):
+        return state[0] + action[0], state[1] + action[1]
+    
+    def actions(self, state):
+        myTaboos = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+        
+        for wallOrBox in myTaboos:
+            stateWithWallBox = state[0] + wallOrBox[0], state[1] + wallOrBox[1]
+            
+            if stateWithWallBox not in self.warehouse.boxes and stateWithWallBox not in self.warehouse.walls:
+                yield wallOrBox
+                
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

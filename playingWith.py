@@ -5,7 +5,9 @@ class Pathing(search.Problem):
     def __init__(self, initial, warehouse, goal=None):
         self.initial = initial
         self.warehouse = warehouse
-        self.goal = goal
+        # Need to reverse the row(y) and col(x) 
+        # from a (y,x) pair to (x,y) pair
+        self.goal = (goal[1], goal[0])
         
     def value(self, state):
         # All moves have a cost of 1
@@ -17,9 +19,9 @@ class Pathing(search.Problem):
         return state[0] + action[0], state[1] + action[1]
     
     def actions(self, state):
-        badPlaces = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        myTaboos = [(0, -1), (0, 1), (-1, 0), (1, 0)]
         
-        for wallOrBox in badPlaces:
+        for wallOrBox in myTaboos:
             stateWithWallBox = state[0] + wallOrBox[0], state[1] + wallOrBox[1]
             
             if stateWithWallBox not in self.warehouse.boxes and stateWithWallBox not in self.warehouse.walls:
