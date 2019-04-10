@@ -38,7 +38,7 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    whTemp = warehouse.copy()   
+    whTemp = warehouse_deepcopy(warehouse)   
     
     # These are in (y, x) format
     moveLeft = (-1, 0)
