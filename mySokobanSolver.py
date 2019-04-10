@@ -213,6 +213,20 @@ class SokobanPuzzle(search.Problem):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def warehouse_deepcopy(warehouse):
+    result = Warehouse()
+    result.worker = (warehouse.worker[0],warehouse.worker[1])
+    
+    boxesInternal = []
+    for i in warehouse.boxes:
+        boxesInternal.append((i[0], i[1]))
+    
+    
+    result.boxes = boxesInternal
+    result.targets = warehouse.targets
+    result.walls = warehouse.walls
+    return result
+
 def check_action_seq(warehouse, action_seq):
     '''
     
@@ -236,7 +250,7 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    whTemp = warehouse.copy()   
+    whTemp = warehouse_deepcopy(warehouse)
     
     # These are in (y, x) format
     moveLeft = (-1, 0)
