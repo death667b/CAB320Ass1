@@ -185,21 +185,27 @@ class SokobanPuzzle(search.Problem):
     If self.macro is set True, the 'actions' function should return 
     macro actions. If self.macro is set False, the 'actions' function should 
     return elementary actions.
-    
-    
     '''
-    #
-    #         "INSERT YOUR CODE HERE"
-    #
-    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
-    #
-    #     Note that you will need to add several functions to 
-    #     complete this class. For example, a 'result' function is needed
-    #     to satisfy the interface of 'search.Problem'.
-
     
-    def __init__(self, warehouse):
-        raise NotImplementedError()
+    allow_taboo_push = False
+    marco = False
+    # if marco true - return [ ((3,4), 'Left'), ((5,2), 'Right')]
+    # if marco false - return [ 'Left', 'Right' ]
+    
+    
+    def createGoal(warehouse):
+        houseLines = str(warehouse) \
+            .replace('@', ' ') \
+            .replace('$', ' ') \
+            .replace('.', '*')
+        return houseLines
+    
+    def __init__(self, initial, warehouse, goal=None):
+        self.initial = initial
+        self.warehouse = warehouse
+        # Need to reverse the row(y) and col(x) 
+        # from a (y,x) pair to (x,y) pair
+        self.goal = createGoal(warehouse)
 
     def actions(self, state):
         """
@@ -209,12 +215,48 @@ class SokobanPuzzle(search.Problem):
         'self.allow_taboo_push' and 'self.macro' should be tested to determine
         what type of list of actions is to be returned.
         """
-        raise NotImplementedError
+        # These are in (y, x) format
+        moveLeft = (-1, 0)
+        moveRight = (1, 0)
+        moveUp= (0, -1)
+        moveDown = (0, 1) 
+        possibleMoves = [moveLeft, moveRight, moveUp, moveDown]
+        nodeAsString = state[1].split('\n')
+        warehouseObject = sokoban.Warehouse()
+        warehouseObject.extract_locations(nodeAsString)
+        tabooCells = sokoban.find_2D_iterator(str(warehouseObject).split('\n'), 'X') \
+            if not self.allow_taboo_push else []
+        
+        currentWalls = warehouseObject.walls
+        currentBoxes = warehouseObject.boxes
+        
+        for box in currentBoxes:
+            for move in possibleMoves:
+                testNewBoxPosition = box[0]+move[0], box[1]+move[1]
+                canIGetThere = can_go_there(warehouseObject, testNewBoxPosition)
+                
+                if canIGetThere and testNewBoxPosition not in currentWalls \
+                        and testNewBoxPosition not in currentBoxes \
+                        and testNewBoxPosition not in tabooCells:
+                    if move == moveLeft:                   
+                        returnObj = (box, "Left") if self.marco else "Left"
+                        yield(returnObj)
+                    if move == moveRight:
+                        returnObj = (box, "Right") if self.marco else "Right"
+                        yield(returnObj)
+                    if move == moveUp:
+                        returnObj = (box, "Up") if self.marco else "Up"
+                        yield(returnObj)
+                    if move == moveDown:
+                        returnObj = (box, "Down") if self.marco else "Down"
+                        yield(returnObj)
+        
+        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def warehouse_deepcopy(warehouse):
-    result = Warehouse()
+    result = sokoban.Warehouse()
     result.worker = (warehouse.worker[0],warehouse.worker[1])
     
     boxesInternal = []
@@ -319,9 +361,8 @@ def solve_sokoban_elem(warehouse):
             If the puzzle is already in a goal state, simply return []
     '''
     
-    ##         "INSERT YOUR CODE HERE"
-    
-    raise NotImplementedError()
+    newActions = solve_sokoban_macro(warehouse)
+    print(newActions)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -373,9 +414,23 @@ def solve_sokoban_macro(warehouse):
         If the puzzle is already in a goal state, simply return []
     '''
     
-    ##         "INSERT YOUR CODE HERE"
+    def heuristic(node):
+        # Using Manhattan Distance for heuristics
+        nodeState = node.state
+        
+        aSquared = nodeState[0] ** 2
+        bSquared = nodeState[1] ** 2
+        manhattanDistance = (aSquared + bSquared) ** 0.5
+        
+        return manhattanDistance
     
-    raise NotImplementedError()
+    warehouseStr = str(warehouse)
+    finalWarehouse = warehouseStr.replace('$', ' '). replace('.', '*')
+    
+    
+    searchResult = search.best_first_graph_search(SokobanPuzzle(warehouseStr, finalWarehouse), heuristic)
+    
+    return searchResult
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
@@ -434,7 +489,7 @@ class SokobanProblem(search.Problem):
     
 class Pathing(search.Problem):
     '''
-    Really need to write something here
+    Tests to see if it is possible to get from A to B
     '''
     def __init__(self, initial, warehouse, goal=None):
         self.initial = initial
