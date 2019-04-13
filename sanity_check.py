@@ -168,11 +168,8 @@ if __name__ == "__main__":
     pass    
 #    print(my_team())  # should print your team
 
-# These tests fail..
+    test_solve_sokoban_macro()   
     test_solve_sokoban_elem()
-#    test_solve_sokoban_macro()   
-    
-# These tests pass..
-#    test_check_elem_action_seq()
-#    test_taboo_cells()
-#    test_can_go_there()
+    test_check_elem_action_seq()
+    test_taboo_cells()
+    test_can_go_there()

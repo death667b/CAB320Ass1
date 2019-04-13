@@ -242,22 +242,21 @@ class SokobanPuzzle(search.Problem):
                 if canIGetThere and testNewBoxPosition not in currentWalls \
                         and testNewBoxPosition not in currentBoxes \
                         and testNewBoxPosition not in tabooCells:
+                    revBox = box[1], box[0]
                     if move == moveLeft:                   
-                        returnObj = (box, "Left") if self.macro else "Left"
+                        returnObj = (revBox, "Left") if self.macro else "Left"
                         yield(returnObj)
-                    if move == moveRight:
-                        returnObj = (box, "Right") if self.macro else "Right"
+                    elif move == moveRight:
+                        returnObj = (revBox, "Right") if self.macro else "Right"
                         yield(returnObj)
-                    if move == moveUp:
-                        returnObj = (box, "Up") if self.macro else "Up"
+                    elif move == moveUp:
+                        returnObj = (revBox, "Up") if self.macro else "Up"
                         yield(returnObj)
-                    if move == moveDown:
-                        returnObj = (box, "Down") if self.macro else "Down"
+                    elif move == moveDown:
+                        returnObj = (revBox, "Down") if self.macro else "Down"
                         yield(returnObj)
         
     def result(self, state, action):
-        # action = 'Right'
-        # state = '#######\n#@ $. #\n#######'
         stateArray = state.split('\n')
         
         warehouseObject = sokoban.Warehouse()
@@ -271,14 +270,27 @@ class SokobanPuzzle(search.Problem):
         moveUp= ((0, -1), 'Up')
         moveDown = ((0, 1), 'Down') 
         possibleMoves = [moveLeft, moveRight, moveUp, moveDown]
+        if type(action) == tuple:
+            actionString = action[1]
+            moveTo = action[0][1], action[0][0]
+        else:
+            actionString = action
         for movePair in possibleMoves:
-            if movePair[1] == action:
+            if movePair[1] == actionString:
                 move = movePair[0]
                 break
         
         # if marco true - action = [ ((3,4), 'Left'), ((5,2), 'Right')]
         if self.macro:
-            pass
+            testLocation = moveTo[0]+(move[0]*-1),moveTo[1]+(move[1]*-1)
+            canWorkerGetTo = can_go_there(warehouseObject, (testLocation[1],testLocation[0]))
+            if canWorkerGetTo:
+                boxArrayPosition = warehouseObject.boxes.index(moveTo)
+                newBoxPosition = moveTo[0] + move[0], moveTo[1] + move[1]
+                warehouseObject.boxes[boxArrayPosition] = newBoxPosition
+                warehouseObject.worker = moveTo
+                return str(warehouseObject)
+            return None
         
         # if marco false - action = [ 'Left', 'Right' ]
         else:
@@ -381,19 +393,19 @@ def check_action_seq(warehouse, action_seq):
     for action in action_seq:
         if action == 'Left':
             whTemp = wallsAndBoxesCheck(whTemp, moveLeft)
-            if not isinstance(whTemp, search.Warehouse):
+            if not isinstance(whTemp, sokoban.Warehouse):
                 break
         elif action == 'Right':
             whTemp = wallsAndBoxesCheck(whTemp, moveRight)
-            if not isinstance(whTemp, search.Warehouse):
+            if not isinstance(whTemp, sokoban.Warehouse):
                 break
         elif action == 'Up':
             whTemp = wallsAndBoxesCheck(whTemp, moveUp)
-            if not isinstance(whTemp, search.Warehouse):
+            if not isinstance(whTemp, sokoban.Warehouse):
                 break
         elif action == 'Down':
             whTemp = wallsAndBoxesCheck(whTemp, moveDown)
-            if not isinstance(whTemp, search.Warehouse):
+            if not isinstance(whTemp, sokoban.Warehouse):
                 break
     
     return str(whTemp)
