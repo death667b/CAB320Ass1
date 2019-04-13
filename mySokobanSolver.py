@@ -188,24 +188,25 @@ class SokobanPuzzle(search.Problem):
     '''
     
     allow_taboo_push = False
-    marco = False
+    macro = False
     # if marco true - return [ ((3,4), 'Left'), ((5,2), 'Right')]
     # if marco false - return [ 'Left', 'Right' ]
     
     
-    def createGoal(warehouse):
+    def createGoal(self, warehouse):
         houseLines = str(warehouse) \
             .replace('@', ' ') \
             .replace('$', ' ') \
             .replace('.', '*')
         return houseLines
     
-    def __init__(self, initial, warehouse, goal=None):
-        self.initial = initial
-        self.warehouse = warehouse
-        # Need to reverse the row(y) and col(x) 
-        # from a (y,x) pair to (x,y) pair
-        self.goal = createGoal(warehouse)
+    def __init__(self, origWarehouse, goal=None):
+        
+        self.initial = str(origWarehouse)
+        if goal is None:
+            self.goal = self.createGoal(self.initial)
+        else:
+            self.goal = goal
 
     def actions(self, state):
         """
@@ -221,7 +222,8 @@ class SokobanPuzzle(search.Problem):
         moveUp= (0, -1)
         moveDown = (0, 1) 
         possibleMoves = [moveLeft, moveRight, moveUp, moveDown]
-        nodeAsString = state[1].split('\n')
+        
+        nodeAsString = state.split('\n')
         warehouseObject = sokoban.Warehouse()
         warehouseObject.extract_locations(nodeAsString)
         tabooCells = sokoban.find_2D_iterator(str(warehouseObject).split('\n'), 'X') \
@@ -233,25 +235,78 @@ class SokobanPuzzle(search.Problem):
         for box in currentBoxes:
             for move in possibleMoves:
                 testNewBoxPosition = box[0]+move[0], box[1]+move[1]
-                canIGetThere = can_go_there(warehouseObject, testNewBoxPosition)
+                # Need to reverse the tuple to be in a (x,y) format
+                testNewPlayerPosition = box[1]+(move[1]*-1), box[0]+(move[0]*-1)
+                canIGetThere = can_go_there(warehouseObject, testNewPlayerPosition)
                 
                 if canIGetThere and testNewBoxPosition not in currentWalls \
                         and testNewBoxPosition not in currentBoxes \
                         and testNewBoxPosition not in tabooCells:
                     if move == moveLeft:                   
-                        returnObj = (box, "Left") if self.marco else "Left"
+                        returnObj = (box, "Left") if self.macro else "Left"
                         yield(returnObj)
                     if move == moveRight:
-                        returnObj = (box, "Right") if self.marco else "Right"
+                        returnObj = (box, "Right") if self.macro else "Right"
                         yield(returnObj)
                     if move == moveUp:
-                        returnObj = (box, "Up") if self.marco else "Up"
+                        returnObj = (box, "Up") if self.macro else "Up"
                         yield(returnObj)
                     if move == moveDown:
-                        returnObj = (box, "Down") if self.marco else "Down"
+                        returnObj = (box, "Down") if self.macro else "Down"
                         yield(returnObj)
         
+    def result(self, state, action):
+        # action = 'Right'
+        # state = '#######\n#@ $. #\n#######'
+        stateArray = state.split('\n')
         
+        warehouseObject = sokoban.Warehouse()
+        warehouseObject.extract_locations(stateArray)
+        
+        workerPos = warehouseObject.worker
+        
+        # These are in (y, x) format
+        moveLeft = ((-1, 0), 'Left')
+        moveRight = ((1, 0), 'Right')
+        moveUp= ((0, -1), 'Up')
+        moveDown = ((0, 1), 'Down') 
+        possibleMoves = [moveLeft, moveRight, moveUp, moveDown]
+        for movePair in possibleMoves:
+            if movePair[1] == action:
+                move = movePair[0]
+                break
+        
+        # if marco true - action = [ ((3,4), 'Left'), ((5,2), 'Right')]
+        if self.macro:
+            pass
+        
+        # if marco false - action = [ 'Left', 'Right' ]
+        else:
+            newWorkerPosition = workerPos[0] + move[0], workerPos[1] + move[1]
+            testPos = stateArray[newWorkerPosition[1]][newWorkerPosition[0]]
+            if testPos == ' ' or testPos == '.':
+                # nothing more to do, just update state with worker = testPos
+                warehouseObject.worker = newWorkerPosition
+                return str(warehouseObject)
+            elif testPos == '$' or testPos == '*':
+                # need to shift box before moving worker to this location
+                assert newWorkerPosition in warehouseObject.boxes
+                boxArrayPosition = warehouseObject.boxes.index(newWorkerPosition)
+                newBoxPosition = newWorkerPosition[0] + move[0], newWorkerPosition[1] + move[1]
+                warehouseObject.boxes[boxArrayPosition] = newBoxPosition
+                warehouseObject.worker = newWorkerPosition[0], newWorkerPosition[1]
+                return str(warehouseObject)
+        
+        
+        return None
+    
+    def goal_test(self, state):
+        playerlessState = state.replace('@', ' ')
+        return self.goal == playerlessState
+    
+    def value(self, state):
+        return 1
+    
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -361,8 +416,52 @@ def solve_sokoban_elem(warehouse):
             If the puzzle is already in a goal state, simply return []
     '''
     
-    newActions = solve_sokoban_macro(warehouse)
-    print(newActions)
+    def heuristic(node):
+        # Using Manhattan Distance for heuristics
+        nodeState = node.state
+        
+        warehouseFromNode = sokoban.Warehouse()
+        warehouseFromNode.extract_locations(nodeState)
+        
+        warehouseTargets = warehouseFromNode.targets
+        warehouseTargetsCount = len(warehouseTargets)
+        warehouseBoxes = warehouseFromNode.boxes
+        warehouseWorker = warehouseFromNode.worker
+        heuristicValue = 0
+        
+        for warehouseBox in warehouseBoxes:
+            totalBoxDistance = 0
+            
+            aSquared = abs(warehouseBox[0] - warehouseWorker[0])
+            bSquared = abs(warehouseBox[1] - warehouseWorker[1])
+            workerDistanceToBox = (aSquared + bSquared) ** 0.5 
+            
+            for warehouseTarget in warehouseTargets:
+                aSquared = abs(warehouseBox[0] - warehouseTarget[0])
+                bSquared = abs(warehouseBox[1] - warehouseTarget[1])
+                
+                manhattanDistanceSingleBox = (aSquared + bSquared) ** 0.5 
+                totalBoxDistance += manhattanDistanceSingleBox
+            
+            
+            heuristicValue += (totalBoxDistance / warehouseTargetsCount) * workerDistanceToBox
+        
+        return heuristicValue
+    
+    puzzle = SokobanPuzzle(warehouse)
+    puzzle.macro = False
+        
+    searchResult = search.best_first_graph_search(puzzle, heuristic)
+    
+    if searchResult is None:
+        return ['Impossible']
+    
+    result = []
+    for node in searchResult.path():
+        if node.action is not None:
+            result.append(node.action)
+    
+    return result
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -418,73 +517,49 @@ def solve_sokoban_macro(warehouse):
         # Using Manhattan Distance for heuristics
         nodeState = node.state
         
-        aSquared = nodeState[0] ** 2
-        bSquared = nodeState[1] ** 2
-        manhattanDistance = (aSquared + bSquared) ** 0.5
+        warehouseFromNode = sokoban.Warehouse()
+        warehouseFromNode.extract_locations(nodeState)
         
-        return manhattanDistance
-    
-    warehouseStr = str(warehouse)
-    finalWarehouse = warehouseStr.replace('$', ' '). replace('.', '*')
-    
-    
-    searchResult = search.best_first_graph_search(SokobanPuzzle(warehouseStr, finalWarehouse), heuristic)
-    
-    return searchResult
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
-class SokobanProblem(search.Problem):
-    def createGoal(warehouse):
-        houseLines = str(warehouse) \
-            .replace('@', ' ') \
-            .replace('$', ' ') \
-            .replace('.', '*')
-        return houseLines
-    
-    def __init__(self, initial, warehouse, goal=None):
-        self.initial = initial
-        self.warehouse = warehouse
-        # Need to reverse the row(y) and col(x) 
-        # from a (y,x) pair to (x,y) pair
-        self.goal = self.createGoal(warehouse)
-    
-    def actions(self, state):
-        """Return the actions that can be executed in the given
-        state. The result would typically be a list, but if there are
-        many actions, consider yielding them one at a time in an
-        iterator, rather than building them all at once."""
-        raise NotImplementedError
-
-    def result(self, state, action):
-        """Return the state that results from executing the given
-        action in the given state. The action must be one of
-        self.actions(state)."""
-        raise NotImplementedError
-
-    def goal_test(self, state):
-        """Return True if the state is a goal. The default method compares the
-        state to self.goal, as specified in the constructor. Override this
-        method if checking against a single self.goal is not enough."""
+        warehouseTargets = warehouseFromNode.targets
+        warehouseTargetsCount = len(warehouseTargets)
+        warehouseBoxes = warehouseFromNode.boxes
+        warehouseWorker = warehouseFromNode.worker
+        heuristicValue = 0
         
-        # MIGHT WANT TO CONVERT STATE TO STRING ?????
-        return state == self.goal
-
-    def path_cost(self, c, state1, action, state2):
-        """Return the cost of a solution path that arrives at state2 from
-        state1 via action, assuming cost c to get up to state1. If the problem
-        is such that the path doesn't matter, this function will only look at
-        state2.  If the path does matter, it will consider c and maybe state1
-        and action. The default method costs 1 for every step in the path."""
-        # 
+        for warehouseBox in warehouseBoxes:
+            totalBoxDistance = 0
+            
+            aSquared = abs(warehouseBox[0] - warehouseWorker[0])
+            bSquared = abs(warehouseBox[1] - warehouseWorker[1])
+            workerDistanceToBox = (aSquared + bSquared) ** 0.5 
+            
+            for warehouseTarget in warehouseTargets:
+                aSquared = abs(warehouseBox[0] - warehouseTarget[0])
+                bSquared = abs(warehouseBox[1] - warehouseTarget[1])
+                
+                manhattanDistanceSingleBox = (aSquared + bSquared) ** 0.5 
+                totalBoxDistance += manhattanDistanceSingleBox
+            
+            
+            heuristicValue += (totalBoxDistance / warehouseTargetsCount) * workerDistanceToBox
         
-        return c + 1
-
-    def value(self, state):
-        """For optimization problems, each state has a value.  Hill-climbing
-        and related algorithms try to maximize this value."""
-        raise NotImplementedError
+        return heuristicValue
     
+    puzzle = SokobanPuzzle(warehouse)
+    puzzle.macro = True
+        
+    searchResult = search.best_first_graph_search(puzzle, heuristic)
+    
+    if searchResult is None:
+        return ['Impossible']
+    
+    result = []
+    for node in searchResult.path():
+        if node.action is not None:
+            result.append(node.action)
+    
+    return result
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
 class Pathing(search.Problem):
