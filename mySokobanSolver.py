@@ -38,7 +38,7 @@ def my_team():
     return [ 
         (0000000, 'Alexandra', 'Koppon'),
         (5372828, 'Ian', 'Daniel'), 
-        (9741232, 'Jordan', 'Ramsay')
+        (9741232, 'Jordon', 'Ramsay')
     ]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
