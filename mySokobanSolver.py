@@ -285,15 +285,9 @@ class SokobanPuzzle(search.Problem):
         
     def result(self, state, action):
         # NO TESTING - YOU ALREADY KNOW THAT THIS IS A VALID MOVE!!!
-        stateArray = state.split('\n')
-        
+        stateArray = state.split('\n')       
         warehouseObject = sokoban.Warehouse()
-        warehouseObject.extract_locations(stateArray)
-#        tabooCells = sokoban.find_2D_iterator(str(warehouseObject).split('\n'), 'X') \
-#            if not self.allow_taboo_push else []
-#        currentWalls = warehouseObject.walls
-#        currentBoxes = warehouseObject.boxes
-        
+        warehouseObject.extract_locations(stateArray)       
         workerPos = warehouseObject.worker
         
         # These are in (y, x) format
@@ -314,15 +308,11 @@ class SokobanPuzzle(search.Problem):
         
         # if marco true - action = [ ((3,4), 'Left'), ((5,2), 'Right')]
         if self.macro:
-#            testLocation = moveFrom[0]+(move[0]*-1),moveFrom[1]+(move[1]*-1)
-            #canWorkerGetTo = can_go_there(warehouseObject, (testLocation[1],testLocation[0]))
-            #if canWorkerGetTo:
             boxArrayPosition = warehouseObject.boxes.index(moveFrom)
             newBoxPosition = moveFrom[0] + move[0], moveFrom[1] + move[1]
             warehouseObject.boxes[boxArrayPosition] = newBoxPosition
             warehouseObject.worker = moveFrom
             return str(warehouseObject)
-            #return None
         
         # if marco false - action = [ 'Left', 'Right' ]
         else:
@@ -337,15 +327,9 @@ class SokobanPuzzle(search.Problem):
                 assert newWorkerPosition in warehouseObject.boxes
                 boxArrayPosition = warehouseObject.boxes.index(newWorkerPosition)
                 newBoxPosition = newWorkerPosition[0] + move[0], newWorkerPosition[1] + move[1]
-                # Test if new box position is on a taboo tile
-#                if newBoxPosition not in currentWalls \
-#                        and newBoxPosition not in currentBoxes \
-#                        and newBoxPosition not in tabooCells:
                 warehouseObject.boxes[boxArrayPosition] = newBoxPosition
                 warehouseObject.worker = newWorkerPosition[0], newWorkerPosition[1]
                 return str(warehouseObject)
-#                else:
-#                    return str(state)
         
         # The code should never EVER get here!
         print("STOP!!!!!!, you should never see this...")
@@ -495,8 +479,7 @@ def solve_sokoban_elem(warehouse):
                 manhattanDistanceSingleBox = (aSquared + bSquared) ** 0.5 
                 totalBoxDistance += manhattanDistanceSingleBox
             
-            
-            heuristicValue += (totalBoxDistance / warehouseTargetsCount) * workerDistanceToBox
+            heuristicValue += (totalBoxDistance / warehouseTargetsCount) + (workerDistanceToBox*warehouseTargetsCount)
         
         return heuristicValue
     
