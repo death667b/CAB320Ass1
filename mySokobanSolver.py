@@ -226,41 +226,73 @@ class SokobanPuzzle(search.Problem):
         nodeAsString = state.split('\n')
         warehouseObject = sokoban.Warehouse()
         warehouseObject.extract_locations(nodeAsString)
-        tabooCells = sokoban.find_2D_iterator(str(warehouseObject).split('\n'), 'X') \
+        justTabooCells = taboo_cells(warehouseObject)
+        tabooCells = list(sokoban.find_2D_iterator(justTabooCells.split('\n'), 'X')) \
             if not self.allow_taboo_push else []
         
         currentWalls = warehouseObject.walls
         currentBoxes = warehouseObject.boxes
+        currentWorker = warehouseObject.worker
         
-        for box in currentBoxes:
+        if self.macro:
+            for box in currentBoxes:
+                for move in possibleMoves:
+                    testNewBoxPosition = box[0]+move[0], box[1]+move[1]
+                    # Need to reverse the tuple to be in a (x,y) format
+                    testNewPlayerPosition = box[1]+(move[1]*-1), box[0]+(move[0]*-1)
+                    canIGetThere = can_go_there(warehouseObject, testNewPlayerPosition)
+                    
+                    if canIGetThere and testNewBoxPosition not in currentWalls \
+                            and testNewBoxPosition not in currentBoxes \
+                            and testNewBoxPosition not in tabooCells:
+                        revBox = box[1], box[0]
+                        if move == moveLeft:
+                            yield(revBox, "Left")
+                        elif move == moveRight:
+                            yield(revBox, "Right")
+                        elif move == moveUp:
+                            yield(revBox, "Up")
+                        elif move == moveDown:
+                            yield(revBox, "Down")
+        else:
             for move in possibleMoves:
-                testNewBoxPosition = box[0]+move[0], box[1]+move[1]
                 # Need to reverse the tuple to be in a (x,y) format
-                testNewPlayerPosition = box[1]+(move[1]*-1), box[0]+(move[0]*-1)
-                canIGetThere = can_go_there(warehouseObject, testNewPlayerPosition)
-                
-                if canIGetThere and testNewBoxPosition not in currentWalls \
-                        and testNewBoxPosition not in currentBoxes \
-                        and testNewBoxPosition not in tabooCells:
-                    revBox = box[1], box[0]
-                    if move == moveLeft:                   
-                        returnObj = (revBox, "Left") if self.macro else "Left"
-                        yield(returnObj)
-                    elif move == moveRight:
-                        returnObj = (revBox, "Right") if self.macro else "Right"
-                        yield(returnObj)
-                    elif move == moveUp:
-                        returnObj = (revBox, "Up") if self.macro else "Up"
-                        yield(returnObj)
-                    elif move == moveDown:
-                        returnObj = (revBox, "Down") if self.macro else "Down"
-                        yield(returnObj)
+                testNewPlayerPosition = currentWorker[0]+move[0], currentWorker[1]+move[1]
+                if testNewPlayerPosition not in currentWalls:
+                    if testNewPlayerPosition not in currentBoxes:
+                        if move == moveLeft:
+                            yield("Left")
+                        elif move == moveRight:
+                            yield("Right")
+                        elif move == moveUp:
+                            yield("Up")
+                        elif move == moveDown:
+                            yield("Down")
+                    else:
+                        # If there is a box in the way, make sure the box can legally be moved
+                        newBoxPosition = testNewPlayerPosition[0]+move[0], testNewPlayerPosition[1]+move[1]
+                        if newBoxPosition not in currentWalls and \
+                                newBoxPosition not in currentBoxes and \
+                                newBoxPosition not in tabooCells:
+                            if move == moveLeft:
+                                yield("Left")
+                            elif move == moveRight:
+                                yield("Right")
+                            elif move == moveUp:
+                                yield("Up")
+                            elif move == moveDown:
+                                yield("Down")
         
     def result(self, state, action):
+        # NO TESTING - YOU ALREADY KNOW THAT THIS IS A VALID MOVE!!!
         stateArray = state.split('\n')
         
         warehouseObject = sokoban.Warehouse()
         warehouseObject.extract_locations(stateArray)
+#        tabooCells = sokoban.find_2D_iterator(str(warehouseObject).split('\n'), 'X') \
+#            if not self.allow_taboo_push else []
+#        currentWalls = warehouseObject.walls
+#        currentBoxes = warehouseObject.boxes
         
         workerPos = warehouseObject.worker
         
@@ -272,7 +304,7 @@ class SokobanPuzzle(search.Problem):
         possibleMoves = [moveLeft, moveRight, moveUp, moveDown]
         if type(action) == tuple:
             actionString = action[1]
-            moveTo = action[0][1], action[0][0]
+            moveFrom = action[0][1], action[0][0]
         else:
             actionString = action
         for movePair in possibleMoves:
@@ -282,15 +314,15 @@ class SokobanPuzzle(search.Problem):
         
         # if marco true - action = [ ((3,4), 'Left'), ((5,2), 'Right')]
         if self.macro:
-            testLocation = moveTo[0]+(move[0]*-1),moveTo[1]+(move[1]*-1)
-            canWorkerGetTo = can_go_there(warehouseObject, (testLocation[1],testLocation[0]))
-            if canWorkerGetTo:
-                boxArrayPosition = warehouseObject.boxes.index(moveTo)
-                newBoxPosition = moveTo[0] + move[0], moveTo[1] + move[1]
-                warehouseObject.boxes[boxArrayPosition] = newBoxPosition
-                warehouseObject.worker = moveTo
-                return str(warehouseObject)
-            return None
+#            testLocation = moveFrom[0]+(move[0]*-1),moveFrom[1]+(move[1]*-1)
+            #canWorkerGetTo = can_go_there(warehouseObject, (testLocation[1],testLocation[0]))
+            #if canWorkerGetTo:
+            boxArrayPosition = warehouseObject.boxes.index(moveFrom)
+            newBoxPosition = moveFrom[0] + move[0], moveFrom[1] + move[1]
+            warehouseObject.boxes[boxArrayPosition] = newBoxPosition
+            warehouseObject.worker = moveFrom
+            return str(warehouseObject)
+            #return None
         
         # if marco false - action = [ 'Left', 'Right' ]
         else:
@@ -305,12 +337,20 @@ class SokobanPuzzle(search.Problem):
                 assert newWorkerPosition in warehouseObject.boxes
                 boxArrayPosition = warehouseObject.boxes.index(newWorkerPosition)
                 newBoxPosition = newWorkerPosition[0] + move[0], newWorkerPosition[1] + move[1]
+                # Test if new box position is on a taboo tile
+#                if newBoxPosition not in currentWalls \
+#                        and newBoxPosition not in currentBoxes \
+#                        and newBoxPosition not in tabooCells:
                 warehouseObject.boxes[boxArrayPosition] = newBoxPosition
                 warehouseObject.worker = newWorkerPosition[0], newWorkerPosition[1]
                 return str(warehouseObject)
+#                else:
+#                    return str(state)
         
-        
-        return None
+        # The code should never EVER get here!
+        print("STOP!!!!!!, you should never see this...")
+        print("The possible actions failed to correctly find the actions available")
+        assert False
     
     def goal_test(self, state):
         playerlessState = state.replace('@', ' ')

@@ -117,6 +117,21 @@ def test_solve_sokoban_elem():
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
+    # third test
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    answer = solve_sokoban_elem(wh)
+    expected_answer = ['Down', 'Left', 'Up', 'Right', 'Right', 'Right', 'Down', 'Left', 'Up', 'Left', \
+                       'Left', 'Down', 'Down', 'Right', 'Up', 'Left', 'Up', 'Right', 'Up', 'Up', 'Left', \
+                       'Down', 'Right', 'Down', 'Down', 'Right', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Up']
+    fcn = test_solve_sokoban_elem
+    print('<<  First test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
         
 
 def test_can_go_there():
@@ -168,8 +183,8 @@ if __name__ == "__main__":
     pass    
 #    print(my_team())  # should print your team
 
-    test_solve_sokoban_macro()   
+#    test_solve_sokoban_macro()   
     test_solve_sokoban_elem()
-    test_check_elem_action_seq()
-    test_taboo_cells()
-    test_can_go_there()
+#    test_check_elem_action_seq()
+#    test_taboo_cells()
+#    test_can_go_there()
